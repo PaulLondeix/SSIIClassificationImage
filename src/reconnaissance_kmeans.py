@@ -1,30 +1,45 @@
 import glob
+import cv2
 from sys import argv
-from python_speech_features import mfcc
 from python_speech_features import logfbank
-import scipy.io.wavfile as wav
 import shutil
 from sklearn.cluster import KMeans
 import numpy as np
-import pickle
 
 verbose = True
 k1 = int(argv[1])
 k2 = int(argv[2])
 
-lesMfcc = np.empty(shape=(0, 13), dtype=float)  # array of all MFCC from all sounds
-dimSons = []  # nb of mfcc per file
-listSons = glob.glob("../resources/test_samples/*.wav")
+image = cv2.imread('../resources/base_samples/citron1.jpg')
+gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+sift = cv2.xfeatures2d.SIFT_create()
+keypoints, descriptors = sift.detectAndCompute(gray, None)
+print('#########################')
+print(keypoints)
+print('#########################')
+print(descriptors)
+print('#########################')
+print(sift)
+print('#########################')
+print('nb. of keypoints: ', len(keypoints))
 
-for s in listSons:
+lesSIFT = []
+
+
+dimImg = []  # nb of mfcc per file
+listImg = glob.glob("../resources/base_samples/*.jpg")
+
+'''for img in listImg:
     if verbose:
-        print("###", s, "###")
-    (rate, sig) = wav.read(s)
-    mfcc_feat = mfcc(sig, rate)
+        print("###", img, "###")
+    image = cv2.imread(img)
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    sift = cv2.xfeatures2d.SIFT_create()
+    keypoints, descriptors = sift.detectAndCompute(gray, None)
     if verbose:
         print("MFCC: ", mfcc_feat.shape)
-    dimSons.append(mfcc_feat.shape[0])
-    lesMfcc = np.append(lesMfcc, mfcc_feat, axis=0)
+    dimImg.append(len(keypoints))
+    lesSIFT = np.append(lesSIFT, mfcc_feat, axis=0)
 
 try:
     with open("../resources/kmeans1.txt", "rb") as input:
@@ -56,4 +71,4 @@ except EOFError:
     exit(-1)
 
 
-print(kmeans2.predict(bows))
+print(kmeans2.predict(bows))'''
