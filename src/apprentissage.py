@@ -1,52 +1,50 @@
 import glob
+import cv2
 from sys import argv
-from python_speech_features import mfcc
-from python_speech_features import logfbank
-import scipy.io.wavfile as wav
-import shutil
 from sklearn.cluster import KMeans
-from sklearn.metrics import confusion_matrix
 import numpy as np
 import pickle
+from sklearn.metrics import confusion_matrix
 from sklearn.linear_model import LogisticRegression
 
-verbose = True
+verbose = False
+
 k1 = int(argv[1])
 
-lesMfcc = np.empty(shape=(0, 13), dtype=float)  # array of all MFCC from all sounds
-dimSons = []  # nb of mfcc per file
-listSons = glob.glob("../resources/base_samples/*.wav")
+lesSIFT = np.empty(shape=(0, 128), dtype=float)
+
 labels = []
+dimImg = []  # nb of mfcc per file
+listImg = glob.glob("../resources/base_samples/*.jpg")
 
-for s in listSons:
-    labels.append(0) if s[26] == 'B' else labels.append(1)
+for img in listImg:
+    labels.append(0) if img[26] == 'c' else labels.append(1)
     if verbose:
-        print("###", s, "###")
-    (rate, sig) = wav.read(s)
-    mfcc_feat = mfcc(sig, rate)
+        print("###", img, "###")
+    image = cv2.imread(img)
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    sift = cv2.xfeatures2d.SIFT_create()
+    keypoints, descriptors = sift.detectAndCompute(gray, None)
     if verbose:
-        print("MFCC: ", mfcc_feat.shape)
-    dimSons.append(mfcc_feat.shape[0])
-    lesMfcc = np.append(lesMfcc, mfcc_feat, axis=0)
-
-# BOW initialization
-bows = np.empty(shape=(0, k1), dtype=int)
-
-# everything ready for the 1st k-means
-try:
-    with open("../resources/kmeans1.txt", "rb") as input:
-        kmeans1 = pickle.load(input)
-except EOFError:
-    kmeans1 = KMeans(n_clusters=k1, random_state=0).fit(lesMfcc)
-    with open("../resources/kmeans1.txt", "wb") as output:
-        pickle.dump(kmeans1, output, pickle.HIGHEST_PROTOCOL)
+        print("SIFT: ", descriptors)
+    dimImg.append(len(descriptors))
+    lesSIFT = np.append(lesSIFT, descriptors, axis=0)
 
 if verbose:
-    print("result of kmeans 1", kmeans1.labels_)
+    print(labels)
 
-# writing the BOWs for second k-means
+# try:
+#    with open("../resources/kmeans1.txt", "rb") as input:
+#        kmeans1 = pickle.load(input)
+# except (EOFError, FileNotFoundError):
+kmeans1 = KMeans(n_clusters=k1, random_state=0).fit(lesSIFT)
+with open("../resources/kmeans1.txt", "wb") as output:
+    pickle.dump(kmeans1, output, pickle.HIGHEST_PROTOCOL)
+
+bows = np.empty(shape=(0, k1), dtype=int)
+
 i = 0
-for nb in dimSons:  # for each sound (file)
+for nb in dimImg:  # for each sound (file)
     tmpBow = [0] * k1
     j = 0
     while j < nb:  # for each MFCC of this sound (file)
@@ -55,28 +53,21 @@ for nb in dimSons:  # for each sound (file)
         i += 1
     copyBow = tmpBow.copy()
     bows = np.append(bows, [copyBow], 0)
-if verbose:
-    print("nb of MFCC vectors per file : ", dimSons)
-    print("BOWs : ", bows)
 
-print(bows)
+# print(bows)
 
-print(labels)
-
-#cr´eation d'un objet de regression logistique
 logisticRegr = LogisticRegression()
-#apprentissage
+
 logisticRegr.fit(bows, labels)
-#calcul des labels pr´edits
+
 labelsPredicted = logisticRegr.predict(bows)
-#calcul et affichage du score
+
 score = logisticRegr.score(bows, labels)
-print("train score = ", score)
 
-
-#sauvegarde de l'objet
+# sauvegarde de l'objet
 with open('../resources/sauvegarde.logr', 'wb') as output:
     pickle.dump(logisticRegr, output, pickle.HIGHEST_PROTOCOL)
 
-print(score)
+print("train score = ", score)
+
 print(confusion_matrix(labels, labelsPredicted))
