@@ -18,7 +18,7 @@ dimImg = []  # nb of mfcc per file
 listImg = glob.glob("../resources/base_samples/*.jpg")
 
 for img in listImg:
-    labels.append(0) if img[26] == 'c' else labels.append(1)
+    labels.append(0) if img[26] == 'b' else labels.append(1)
     if verbose:
         print("###", img, "###")
     image = cv2.imread(img)
@@ -44,10 +44,10 @@ with open("../resources/kmeans1.txt", "wb") as output:
 bows = np.empty(shape=(0, k1), dtype=int)
 
 i = 0
-for nb in dimImg:  # for each sound (file)
+for nb in dimImg:  # for each img
     tmpBow = [0] * k1
     j = 0
-    while j < nb:  # for each MFCC of this sound (file)
+    while j < nb:  # for each SIFT of this img
         tmpBow[kmeans1.labels_[i]] += 1
         j += 1
         i += 1

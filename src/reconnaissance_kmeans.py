@@ -18,7 +18,7 @@ dimImg = []  # nb of mfcc per file
 listImg = glob.glob("../resources/test_samples/*.jpg")
 
 for img in listImg:
-    labels.append(0) if img[26] == 'c' else labels.append(1)
+    labels.append(0) if img[26] == 'b' else labels.append(1)
     if verbose:
         print("###", img, "###")
     image = cv2.imread(img)
@@ -39,6 +39,8 @@ try:
 except (EOFError, FileNotFoundError):
     exit(-1)
 
+kmeans1new = kmeans1.predict(lesSIFT)
+
 bows = np.empty(shape=(0, k1), dtype=int)
 
 i = 0
@@ -46,7 +48,7 @@ for nb in dimImg:  # for each sound (file)
     tmpBow = [0] * k1
     j = 0
     while j < nb:  # for each MFCC of this sound (file)
-        tmpBow[kmeans1.labels_[i]] += 1
+        tmpBow[kmeans1new[i]] += 1
         j += 1
         i += 1
     copyBow = tmpBow.copy()
@@ -62,5 +64,7 @@ labelsPredicted = logisticRegr.predict(bows)
 
 score = logisticRegr.score(bows, labels)
 print("train score = ", score)
-print(labels)
+# print(labels)
 print(labelsPredicted)
+
+print(confusion_matrix(labels, labelsPredicted))
